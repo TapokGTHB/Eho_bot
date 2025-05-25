@@ -1,8 +1,11 @@
 import telebot # <- Импорт скачанного модуля
 import keyboards 
 import fsm 
-BOT_TOKEN = '8068581430:AAGqJAspHbkciXZfToem8BFQA3bxPMuidBc' # <- Здесь указываем свой телеграм токен из BotFather
+import ai
+
+BOT_TOKEN = '8068581430:AAEEL-L30PJOTbjgY4gLQQ_N20hpY40UQXk' # <- Здесь указываем свой телеграм токен из BotFather
 stater = fsm.FSM()
+ai_service = ai.AI()
 bot = telebot.TeleBot(BOT_TOKEN) # <- Создаем обьект телеграм бота
 
 def handle_default_state(message):
@@ -19,15 +22,22 @@ def handle_image_state(message):
     if message.text == 'Its all over':
             return_to_menu(message.chat.id)
     else:
-        # TODO image gn...
-        bot.send_message(message.chat.id, 'Скоро буду генерировать фото. . .')
+        try:
+            msg = bot.send_message(chat_id=message.chat.id, text='Генерирую...')
+            image_url = ai_service.generate_image(message.text)
+            bot.delete_message(chat_id=message.chat.id, message_id=msg.id)
+            bot.send_photo(chat_id=message.chat.id, caption='Ваше фото', photo=image_url)
+        except Exception as e:
+            bot.send_message(message.chat.id, text=f'Произошла ошибка ({str(e)})')
 
 def handle_text_state(message):
     if message.text == 'Its all over':
+            ai_service.clear_dialog(message.chat.id)
             return_to_menu(message.chat.id)
     else:
-        #TODO text gn...
-        bot.send_message(message.chat.id, text='Скоро буду генерировать текст. . .')
+        msg = bot.send_message(message.chat.id, 'Думаю над запросом...')
+        txt = ai_service.generate_text(message.text, message.chat.id)
+        msg = bot.edit_message_text(text=txt, chat_id=message.chat.id, message_id=msg.id) 
 
 def return_to_menu(chat_id):
      stater.set_state(chat_id, fsm.default_state)
