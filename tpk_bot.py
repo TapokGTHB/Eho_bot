@@ -2,11 +2,26 @@ import telebot # <- Импорт скачанного модуля
 import keyboards 
 import fsm 
 import ai
+import loguru
+import yaml
+import sys
 
-BOT_TOKEN = '8068581430:AAEEL-L30PJOTbjgY4gLQQ_N20hpY40UQXk' # <- Здесь указываем свой телеграм токен из BotFather
 stater = fsm.FSM()
-ai_service = ai.AI()
+logger = loguru.logger
+
+try:
+    with open("./config2.yaml", 'r') as file:
+         cfg = yaml.safe_load(file)
+         logger.info("Успешно загружена конфигурация")
+except Exception as e:
+     logger.warning("Произошла ошибка при установки конфигурации ({})", str(e))
+     input()
+     sys.exit(1)
+
+ai_service = ai.AI(cfg)
+BOT_TOKEN = cfg['telegram_token'] # <- Здесь указываем свой телеграм токен из BotFather
 bot = telebot.TeleBot(BOT_TOKEN) # <- Создаем обьект телеграм бота
+
 
 def handle_default_state(message):
     if message.text == 'image':
@@ -48,6 +63,14 @@ def return_to_menu(chat_id):
 @bot.message_handler(func=lambda message: True) # <- Регистрируем обработчик события "на сообщение"
 def on_message(message):
     state = stater.get_state(message.chat.id)
+
+    logger.info(
+            "Пользователь [{}:{}] отправил сообщение '{}' в состоянии {}",
+            message.chat.id,
+            message.from_user.first_name,
+            message.text,
+            state
+    )
 
     print(f"user msg '{message.text}' - on state {state}")
     if state == fsm.default_state:
