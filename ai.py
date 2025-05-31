@@ -1,4 +1,7 @@
 from g4f.client import Client
+import loguru
+
+logger = loguru.logger
 
 class AI:
     def __init__(self, cfg):
